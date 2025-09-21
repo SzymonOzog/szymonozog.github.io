@@ -8,7 +8,7 @@ date: 2025-09-21
 A goal of mine would be to be able to swap Penny and NCCL in an LLM serving framework and see close to no performance degradation.
 Choosing LLM inference makes things simpler as it almost only relies on AllReduce so this is the first algorithm that I'll try to implement.
 
-This will be the first part of a worklog on it, showing my progress. That being said, they will evolve over time as I'm learning new things about GPU communication. 
+This will be the first part of a worklog on it, showing my progress. If you want to track it live instead of waiting for blog posts it's publicly available on my [GitHub](https://github.com/SzymonOzog/Penny) That being said, they will evolve over time as I'm learning new things about GPU communication. 
 Obviously I cannot write NCCL on my own so there are tradeoffs to be made. I'm not gonna optimize that much for reducing the usage of GPU resources(SMs and memory) and will focus on correctness and speed.
 
 As an implementation tool for it I chose NVSHMEM, this is a communication library from NVIDIA that's based on OpenSHMEM standard. The important part is that as opposed to NCCL it has a device API,
