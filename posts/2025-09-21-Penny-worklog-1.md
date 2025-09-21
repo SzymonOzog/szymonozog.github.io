@@ -755,8 +755,7 @@ This is a pretty awesome result for large buffers, again we can combine this wit
 <img alt="comparison_4_nccl_ring_vs_penny_combined" src="https://github.com/user-attachments/assets/bfe3a9c4-7aa3-4021-81c9-89341a51eae5" />
 
 Before you start making conclusions about how we got to beat NCCL for the high buffers, this plot is a bit of a lie. We forced 'NCCL_ALGO=RING' to compare apples to apples since we're implementing a ring algorithm here. But by default
-NCCL chooses a tree algorithm. If we compare against that it turns out that we still have room for improvement. I started playing around with it for a bit but sadly no longer have access to a multinode setup (wink wink if you do and want to support 
-educational content)
+NCCL chooses a tree algorithm. If we compare against that it turns out that we still have room for improvement. I started playing around with it for a bit but sadly no longer have access to a multinode setup, so there is a chance that you'll have to wait for an implementation
 <img alt="comparison_5_nccl_tree_vs_penny_ring_qp" src="https://github.com/user-attachments/assets/d947106f-fdd2-493e-b696-c7d7fd0f384c" />
 
 
