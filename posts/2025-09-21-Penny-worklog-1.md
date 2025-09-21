@@ -8,14 +8,14 @@ date: 2025-09-21
 A goal of mine would be to be able to swap Penny and NCCL in an LLM serving framework and see close to no performance degradation.
 Choosing LLM inference makes things simpler as it almost only relies on AllReduce so this is the first algorithm that I'll try to implement.
 
+This will be the first part of a worklog on it, showing my progress. That being said, they will evolve over time as I'm learning new things about GPU communication. 
+Obviously I cannot write NCCL on my own so there are tradeoffs to be made. I'm not gonna optimize that much for reducing the usage of GPU resources(SMs and memory) and will focus on correctness and speed.
+
 As an implementation tool for it I chose NVSHMEM, this is a communication library from NVIDIA that's based on OpenSHMEM standard. The important part is that as opposed to NCCL it has a device API,
 meaning that we can send data from one GPU to another while executing the kernel. Imagine the possibilities. It takes away the fun of implementing all of
 the low level communication stuff and gives us higher level primitives that we can work with to send data between our GPUs, but as 
 much as I'd love to get to know this stuff I'm afraid that implementing this myself would be too big in scope and the project would
 end up on the graveyard of my private github unfinished projects. I'll leave this as a sidequest for later.
-
-This will be the first part of a worklog on it, showing my progress. That being said, they will evolve over time as I'm learning new things about GPU communication. 
-Obviously I cannot write NCCL on my own so there are tradeoffs to be made. I'm not gonna optimize that much for reducing the usage of GPU resources(SMs and memory) and will focus on correctness and speed.
 
 That being said the first part of the worklog will have four sections: 
 
@@ -735,7 +735,7 @@ if constexpr (INTERNODE)
 
 I do agree that it's pretty non pragmatic, especially the while loop, but it made it much easier to change how we structure our ring, and due to time 
 constraints I didn't go through finding the heuristics to eliminate it(+ it doesn't affect performance so there was no pressure to do so). I'll probably refactor 
-this later once I settle on heuristics
+this later once I settle on the algorithm
  
 The rest of the code looks more less the same except for that the alternating rings need to increment `recv_chunk`
 ```C
