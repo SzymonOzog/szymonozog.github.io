@@ -773,10 +773,10 @@ I'm also posting on [X](https://x.com/SzymonOzog_) and I have a [YouTube](https:
 
 ## Resources
 
-[RDMA Aware Networks Programming User Manual](https://docs.nvidia.com/networking/display/rdmaawareprogrammingv17)
-[NVSHMEM Documentation](https://docs.nvidia.com/nvshmem/api/index.html)
-[DeepEP codebase](https://github.com/deepseek-ai/deepep)
-[GPU MODE talk by Jeff Hammond](https://youtu.be/zxGVvMN6WaM?si=etPiCfP7cXaeJX1m)
-[Training Deep Learning Models at Scale: How NCCL Enables Best Performance on AI Data Center Networks](https://www.nvidia.com/en-us/on-demand/session/gtc24-s62129/)
-[Demystifying NCCL](https://arxiv.org/pdf/2507.04786)
+- [RDMA Aware Networks Programming User Manual](https://docs.nvidia.com/networking/display/rdmaawareprogrammingv17)
+- [NVSHMEM Documentation](https://docs.nvidia.com/nvshmem/api/index.html)
+- [DeepEP codebase](https://github.com/deepseek-ai/deepep)
+- [GPU MODE talk by Jeff Hammond](https://youtu.be/zxGVvMN6WaM?si=etPiCfP7cXaeJX1m)
+- [Training Deep Learning Models at Scale: How NCCL Enables Best Performance on AI Data Center Networks](https://www.nvidia.com/en-us/on-demand/session/gtc24-s62129/)
+- [Demystifying NCCL](https://arxiv.org/pdf/2507.04786)
 
