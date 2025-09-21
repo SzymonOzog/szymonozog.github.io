@@ -31,7 +31,7 @@ with network switches to send data outwards. Inside the nodes, all GPUs are inte
 
 I've visualized this on the image below, but reduced this to 4 GPUs per node not to clutter this too much. I think you get the idea.
 
-<img width="1363" height="673" alt="SETUP" src="https://github.com/user-attachments/assets/bcea6c98-af59-465e-8d6c-e76131005928" />
+<img alt="SETUP" src="https://github.com/user-attachments/assets/bcea6c98-af59-465e-8d6c-e76131005928" />
 
 To check what NICs there are available we can run `nvidia-smi topo -m`
 
@@ -470,7 +470,7 @@ __global__ void all_reduce_ring_kernel(scalar_t* __restrict__ destination, scala
 ```
 
 Let's check the bandwidth that we're getting with this kernel(sweeping across `block_size` and `packet_size`)
-<img width="4466" height="1752" alt="comparison_6_nccl_intra_vs_penny_intra" src="https://github.com/user-attachments/assets/316b2367-d521-4a74-b032-2fac5f42edae" />
+<img alt="comparison_6_nccl_intra_vs_penny_intra" src="https://github.com/user-attachments/assets/316b2367-d521-4a74-b032-2fac5f42edae" />
 
 Okay, it's not that bad but let's see how can we improve on this.
 
