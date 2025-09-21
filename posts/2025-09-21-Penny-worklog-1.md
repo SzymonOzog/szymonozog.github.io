@@ -621,12 +621,12 @@ It's much better but still behind NCCL, for this part of the blogpost I'll say I
 
 ## Multi node reduction
 
-So we've kinda cracked single node, let's run our kernel in a multi node setting 
+So we've kinda cracked single node, let's run our kernel in a multi node setting, a minimal 2 node(16 GPUs) as those things are not easy to get ;)
 <img alt="comparison_1_nccl_ring_vs_penny_base" src="https://github.com/user-attachments/assets/7dbe944d-01e7-42bd-b323-aeea6f4ba184" />
 
 Wow it's quite bad.
 
-To understand why this happens we need to visualize our ring. If you remembered from the introduction on communications. We send and receive data internode through our NICs
+To understand why this happens we need to visualize our ring. If you remembered from the introduction on communications, we send and receive data internode through our NICs.
 Currently our ring only utilizes two of them on each node for communication.
 <img alt="INTRANODE_RING" src="https://github.com/user-attachments/assets/8542334e-9231-4cdc-89d7-ee6e3e906206" />
 
@@ -768,7 +768,7 @@ performance tuning, and checking NIC utilization for multi node setup(would love
 
 ## Shameless self promotion
 
-I'm also posting on [X](https://x.com/SzymonOzog_) and I have a [YouTube](https://www.youtube.com/@szymonozog7862) channel where you can get some more GPU content. If you liked the article too much you can always [Buy Me A Coffe](https://buymeacoffee.com/simonoz)
+I'm also posting on [X](https://x.com/SzymonOzog_) and I have a [YouTube](https://www.youtube.com/@szymonozog7862) channel where you can get some more GPU content. If you liked the article too much you can always [Buy Me A Coffee](https://buymeacoffee.com/simonoz)
 
 
 ## Resources
