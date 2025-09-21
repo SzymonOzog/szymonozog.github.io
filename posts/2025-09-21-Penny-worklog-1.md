@@ -514,7 +514,7 @@ nvshmemx_putmem_signal_nbi_block(destination + off + chunk*chunk_off,
         buffer + send_chunk*chunk_off + off,
         block_size, local_signal, stage, NVSHMEM_SIGNAL_SET, send_peer);
 ```
-<img width="4466" height="1752" alt="comparison_7_nccl_intra_vs_penny_intra_opt" src="https://github.com/user-attachments/assets/2733c75c-f3f3-40ee-97e9-3de261b99f5d" />
+<img alt="comparison_7_nccl_intra_vs_penny_intra_opt" src="https://github.com/user-attachments/assets/2733c75c-f3f3-40ee-97e9-3de261b99f5d" />
 
 Okay now the speeds we are getting are *almost* satisfying. The one thing that stands out is how bad we are compared to NCCL on small buffers.
 What I've noticed is that up to a certain points, they are all the same speed, this means that we're very heavily latency bound. This lead me to
@@ -615,23 +615,23 @@ __global__ void all_reduce_simple_ring_kernel(scalar_t* __restrict__ destination
 ```
 
 Let's benchmark it
-<img width="4539" height="1752" alt="comparison_8_nccl_intra_vs_penny_intra_combined" src="https://github.com/user-attachments/assets/737a6a02-661f-4933-9a49-b4c18e9e9cfb" />
+<img alt="comparison_8_nccl_intra_vs_penny_intra_combined" src="https://github.com/user-attachments/assets/737a6a02-661f-4933-9a49-b4c18e9e9cfb" />
 
 It's much better but still behind NCCL, for this part of the blogpost I'll say I'm satisfied with it but in reality I'm not. We'll get back to fixing this later. For now let's jump into
 
 ## Multi node reduction
 
 So we've kinda cracked single node, let's run our kernel in a multi node setting 
-<img width="4466" height="1752" alt="comparison_1_nccl_ring_vs_penny_base" src="https://github.com/user-attachments/assets/7dbe944d-01e7-42bd-b323-aeea6f4ba184" />
+<img alt="comparison_1_nccl_ring_vs_penny_base" src="https://github.com/user-attachments/assets/7dbe944d-01e7-42bd-b323-aeea6f4ba184" />
 
 Wow it's quite bad.
 
 To understand why this happens we need to visualize our ring. If you remembered from the introduction on communications. We send and receive data internode through our NICs
 Currently our ring only utilizes two of them on each node for communication.
-<img width="1363" height="804" alt="INTRANODE_RING" src="https://github.com/user-attachments/assets/8542334e-9231-4cdc-89d7-ee6e3e906206" />
+<img alt="INTRANODE_RING" src="https://github.com/user-attachments/assets/8542334e-9231-4cdc-89d7-ee6e3e906206" />
 
 If we rerun our ring reduction kernel with a tool that can analyze traffic like [ibtop](https://github.com/JannikSt/ibtop) we can confirm that only one of our NICs is sending the data and only one is receiving the data:
-<img width="599" height="426" alt="ibtop_output" src="https://github.com/user-attachments/assets/df298fd3-2228-4344-ae76-0c4955c089f7" />
+<img alt="ibtop_output" src="https://github.com/user-attachments/assets/df298fd3-2228-4344-ae76-0c4955c089f7" />
 
 ### Solution
 
@@ -641,14 +641,14 @@ The very important part is how we can structure our rings. For this we would nee
 Which are in turn connected to a number of spine switches. There are a lot of configurations of how leaf switches are connected but for AI workloads the typical solution would be a rail optimized design.
 In this way, same index NICs on nodes are connected to the same leaf switch, so if we were to create a ring on nodes being on the same leaf, it would be possible to do so with just one hop, without ever hitting the spline switch.
 
-<img width="1128" height="713" alt="SWITCHES" src="https://github.com/user-attachments/assets/1301f39e-fd3a-43d6-9a1c-58637e19525c" />
+<img alt="SWITCHES" src="https://github.com/user-attachments/assets/1301f39e-fd3a-43d6-9a1c-58637e19525c" />
 
 This is the idea behind alternating rings. It's designed for rail-optimized topologies and it ensures that we don't cross the rails between NICs. Here every other node alternates the ring so that we can send data internode through NICs with the same index 
-<img width="1363" height="783" alt="RING1" src="https://github.com/user-attachments/assets/483bd1d9-cc87-47e4-9e53-d026e492ab2f" />
+<img alt="RING1" src="https://github.com/user-attachments/assets/483bd1d9-cc87-47e4-9e53-d026e492ab2f" />
 
 
 We can create this type of ring for every pair of NICs
-<img width="1363" height="893" alt="RING2" src="https://github.com/user-attachments/assets/94375e64-430d-4ad8-b867-e8cd2960d63d" />
+<img alt="RING2" src="https://github.com/user-attachments/assets/94375e64-430d-4ad8-b867-e8cd2960d63d" />
 
 
 Since the bandwidth is bidirectional, we can invert every other ring for that extra speed improvement
@@ -744,20 +744,20 @@ if(ring_id%2 == 1 && INTERNODE)
 else
     recv_chunk = (n_pes + recv_chunk - 1)%n_pes;
 ```
-<img width="4466" height="1752" alt="comparison_2_nccl_ring_vs_penny_ring" src="https://github.com/user-attachments/assets/d19ce1cb-6570-4a9b-a160-c845840b34aa" />
+<img alt="comparison_2_nccl_ring_vs_penny_ring" src="https://github.com/user-attachments/assets/d19ce1cb-6570-4a9b-a160-c845840b34aa" />
 
 Running this we can see that our performance is much better although it's still a bit off. To our rescue comes another environment variable `NVSHMEM_IBGDA_NUM_RC_PER_PE`, this exposes the number of Reliable Connections(RC) in our peer. RCs are a 
 type of a Queue Pair(QP) (so a pair of send and receive queue) used for reliable communication. You can think of this as the equivalent of a socket in networking. By default this was set to 2 but we can increase the number. For me 32+ started giving much better results.
-<img width="4466" height="1752" alt="comparison_3_nccl_ring_vs_penny_ring_qp" src="https://github.com/user-attachments/assets/4d094fd6-7f50-4d90-8eec-a2377739ac06" />
+<img alt="comparison_3_nccl_ring_vs_penny_ring_qp" src="https://github.com/user-attachments/assets/4d094fd6-7f50-4d90-8eec-a2377739ac06" />
 
 This is a pretty awesome result for large buffers, again we can combine this with our simple ring from earlier to get performance in latency sensitive situations.
 
-<img width="4466" height="1752" alt="comparison_4_nccl_ring_vs_penny_combined" src="https://github.com/user-attachments/assets/bfe3a9c4-7aa3-4021-81c9-89341a51eae5" />
+<img alt="comparison_4_nccl_ring_vs_penny_combined" src="https://github.com/user-attachments/assets/bfe3a9c4-7aa3-4021-81c9-89341a51eae5" />
 
 Before you start making conclusions about how we got to beat NCCL for the high buffers, this plot is a bit of a lie. We forced 'NCCL_ALGO=RING' to compare apples to apples since we're implementing a ring algorithm here. But by default
 NCCL chooses a tree algorithm. If we compare against that it turns out that we still have room for improvement. I started playing around with it for a bit but sadly no longer have access to a multinode setup (wink wink if you do and want to support 
 educational content)
-<img width="4466" height="1752" alt="comparison_5_nccl_tree_vs_penny_ring_qp" src="https://github.com/user-attachments/assets/d947106f-fdd2-493e-b696-c7d7fd0f384c" />
+<img alt="comparison_5_nccl_tree_vs_penny_ring_qp" src="https://github.com/user-attachments/assets/d947106f-fdd2-493e-b696-c7d7fd0f384c" />
 
 
 ## Conclusion and next steps
