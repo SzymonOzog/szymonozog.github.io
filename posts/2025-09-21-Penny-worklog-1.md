@@ -11,7 +11,7 @@ Choosing LLM inference makes things simpler as it almost only relies on AllReduc
 This will be the first part of a worklog on it, showing my progress. If you want to track it live instead of waiting for blog posts it's publicly available on my [GitHub](https://github.com/SzymonOzog/Penny) That being said, they will evolve over time as I'm learning new things about GPU communication. 
 Obviously I cannot write NCCL on my own so there are tradeoffs to be made. I'm not gonna optimize that much for reducing the usage of GPU resources(SMs and memory) and will focus on correctness and speed.
 
-As an implementation tool for it I chose NVSHMEM, this is a communication library from NVIDIA that's based on OpenSHMEM standard. The important part is that as opposed to NCCL it has a device API,
+As an implementation tool for it I chose NVSHMEM, this is a communication library from NVIDIA that's based on OpenSHMEM standard. The important part is that as opposed to NCCL(EDIT: NCCL does have a [device API](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/api/device.html) but it doesn't have all of the features of NVSHMEM) it has a device API,
 meaning that we can send data from one GPU to another while executing the kernel. Imagine the possibilities. It takes away the fun of implementing all of
 the low level communication stuff and gives us higher level primitives that we can work with to send data between our GPUs, but as 
 much as I'd love to get to know this stuff I'm afraid that implementing this myself would be too big in scope and the project would
