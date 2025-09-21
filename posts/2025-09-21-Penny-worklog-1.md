@@ -121,6 +121,8 @@ This is pretty neat because those assumptions save us from a lot of trouble of m
 
 Quick side note on the naming conventions. Every time that a function is prefixed with `nvshmem` it's based on an equivalent in the OpenSHMEM standard, if it's prefixed with `nvshmemx`, it's an extension to the standard
 
+Also NVSHMEM calls remote peers `pe` in this blogpost I'll use the terms `peer` and `pe` interchangeably 
+
 ### Initialization
 
 Before we start exchanging the data, our processes need to be aware of each other. The default methods for initializing NVSHMEM are MPI or their own launcher called Hydra. I don't want to rely on any of those
@@ -187,7 +189,7 @@ The `get` way:
 
 I'll got with the `put` way as it seems more natural to me but AFAIK both ways achieve the same speed(it might be actually a fun exercise to rewrite all of the algorithms using `get`)
 
-There are a lot of versions of `put` that NVSHMEM exposes, from the NVSHMEM standard
+There are a lot of versions of `put` that NVSHMEM exposes. In the the NVSHMEM standard we have:
 
 `nvshmem_DATATYPE_put`
 
@@ -270,7 +272,7 @@ void exchange(torch::Tensor& buffer, int packet_size, int block_size, int peer)
 }
 ```
 
-`packet_size` in the code is the size in Bytes that a single thread sends, and `block_size` is the amount of threads that work together to 
+`packet_size` in the code is the size in bytes that a single thread sends, and `block_size` is the amount of threads that work together to 
 call our `putmem` function.
 
 To find a good configuration I just ran a sweep across sensible outputs. For intranode we're getting 733 GB/s and for internode we're getting 87 GB/s
@@ -326,6 +328,10 @@ void exchange(torch::Tensor& buffer, int packet_size, int block_size, int peer)
     const uint32_t grid_size = std::ceil(buffer.numel()*sizeof(half) / float(packet_size*block_size));
 
     uint64_t *signal = (uint64_t *) nvshmem_malloc(grid_size * sizeof(uint64_t));
+    cudaMemset(signal, 0, grid_size_x * sizeof(uint64_t));
+        
+    //sync the memset before running kernel
+    nvshmemx_barrier_all_on_stream(stream);
 
     exchange<<<grid_size, block_size, 0, stream>>>(destination,
             static_cast<half*>(buffer.data_ptr()),
@@ -349,7 +355,7 @@ Right now in our kernel, after placing the data on the remote PE we:
 
 Let's run our sweep again. With this we're getting 80 GB/s internode and 560 GB/s intranode
 
-Okay, we're actually doing operations on the data inside our kernel but we got a big slowdown, can we go faster?
+With this change we're actually doing operations on the data inside our kernel but at a cost of a big slowdown, can we go faster?
 
 Of course we can.
 
@@ -388,7 +394,7 @@ Reduce phase where we pass the data that we received + our local data
 
 ![ring_reduce](https://github.com/user-attachments/assets/2fddb359-9af7-48f7-b87c-4efa822df2aa)
 
-Broadcast phase, where we propagate the final output through the ring 
+Broadcast phase(in some literature also refered to as gather phase or share phase), where we propagate the final output through the ring 
 
 ![ring_broadcast](https://github.com/user-attachments/assets/473ad547-0624-4743-b161-171383e5423d)
 
@@ -526,7 +532,7 @@ Because our small buffer sends are very latency bound, we essentially want to re
 that we're sending. Using chunks to send the data was bandwidth efficient but it gave us a constraint on how big of a packet can we send through the network,
 the maximum was `packet_size * block_size * world_size`, we can drop the `world_size` scale by doing a simple ring that doesn't deal in chunks
 
-At the cost of worse parallelism we're getting less hops per peer. Previously each was sending `2*(world_size-1)` small chunks, now each is sending `2` big chunks
+At the cost of worse parallelism we're getting less hops per peer with bigger transfer sizes. Previously each was sending `2*(world_size-1)` small chunks, now each is sending `2` big chunks
 
 ![Simple_ring](https://github.com/user-attachments/assets/5061cd4c-632d-4e09-bf67-b5830af2e8a2)
 
@@ -754,8 +760,8 @@ This is a pretty awesome result for large buffers, again we can combine this wit
 
 <img alt="comparison_4_nccl_ring_vs_penny_combined" src="https://github.com/user-attachments/assets/bfe3a9c4-7aa3-4021-81c9-89341a51eae5" />
 
-Before you start making conclusions about how we got to beat NCCL for the high buffers, this plot is a bit of a lie. We forced 'NCCL_ALGO=RING' to compare apples to apples since we're implementing a ring algorithm here. But by default
-NCCL chooses a tree algorithm. If we compare against that it turns out that we still have room for improvement. I started playing around with it for a bit but sadly no longer have access to a multinode setup, so there is a chance that you'll have to wait for an implementation
+Before you start making conclusions about how we got to beat NCCL for the high buffers, this plot is a bit of a lie. We forced `NCCL_ALGO=RING` to compare apples to apples since we're implementing a ring algorithm here. But by default NCCL chooses a tree algorithm which is better optimized for this scenario. 
+If we compare against that it turns out that we still have room for improvement. I started playing around with it for a bit but sadly no longer have access to a multinode setup, so there is a chance that you'll have to wait for an implementation
 <img alt="comparison_5_nccl_tree_vs_penny_ring_qp" src="https://github.com/user-attachments/assets/d947106f-fdd2-493e-b696-c7d7fd0f384c" />
 
 
