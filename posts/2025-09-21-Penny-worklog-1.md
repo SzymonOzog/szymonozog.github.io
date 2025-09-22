@@ -189,7 +189,7 @@ The `get` way:
 
 I'll got with the `put` way as it seems more natural to me but AFAIK both ways achieve the same speed(it might be actually a fun exercise to rewrite all of the algorithms using `get`)
 
-There are a lot of versions of `put` that NVSHMEM exposes. In the the NVSHMEM standard we have:
+There are a lot of versions of `put` that NVSHMEM exposes. In the NVSHMEM standard we have:
 
 `nvshmem_DATATYPE_put`
 
