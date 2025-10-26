@@ -12,7 +12,7 @@ Previously we've managed to get quite a good performance with two ring algorithm
 touched on how to think of multi GPU programming when we're going internode. The big gap we have right now against NCCL is when running allreduce across
 very small buffers. This part will focus on fixing this, sadly, due to hardware constrains on my side only intranode for this part
 
-<img width="4539" height="1752" alt="491993039-737a6a02-661f-4933-9a49-b4c18e9e9cfb" src="https://github.com/user-attachments/assets/e23a3e5e-a354-4241-ba60-b9bfab374225" />
+<img alt="491993039-737a6a02-661f-4933-9a49-b4c18e9e9cfb" src="https://github.com/user-attachments/assets/e23a3e5e-a354-4241-ba60-b9bfab374225" />
 
 # Giving credit where it belongs
 
@@ -78,7 +78,7 @@ __global__ void all_reduce_oneshot_kernel(scalar_t* __restrict__ destination, sc
     }
 }
 ```
-<img width="4469" height="1766" alt="Oneshot_1" src="https://github.com/user-attachments/assets/95166e52-558a-460f-9177-16f974cad8e2" />
+<img alt="Oneshot_1" src="https://github.com/user-attachments/assets/95166e52-558a-460f-9177-16f974cad8e2" />
 
 This already gives us better performance than our ring reductions but there's still a lot of room for improvement, there are two issues right now. 
 
@@ -142,7 +142,7 @@ And the other blocks wait untill they recieve the data from other PEs and the lo
 
 Let's benchmark it again.
 
-<img width="4469" height="1766" alt="Oneshot_2" src="https://github.com/user-attachments/assets/7a581b30-9ddd-4fd0-b788-08e8a985df93" />
+<img alt="Oneshot_2" src="https://github.com/user-attachments/assets/7a581b30-9ddd-4fd0-b788-08e8a985df93" />
 
 Okay, the performance go better but not by a lot. Currently the bottleneck is that we only do memry transfers using one block, we can split this across other blocks:
 
@@ -159,7 +159,7 @@ else
 }
 ```
 
-<img width="4469" height="1766" alt="Oneshot_3" src="https://github.com/user-attachments/assets/a0319464-08bb-45fe-945d-739cb49e3f6c" />
+<img alt="Oneshot_3" src="https://github.com/user-attachments/assets/a0319464-08bb-45fe-945d-739cb49e3f6c" />
 
 
 Now we're getting fast. But we can still do better than this
@@ -171,7 +171,7 @@ The next thing I tried was doing a reduction in parallel, currently it takes `N_
 
 I could scribe 16x16 words but it's easier to show an image of this:
 
-<img width="2064" height="1086" alt="Untitled-2025-09-19-1412" src="https://github.com/user-attachments/assets/186b37fa-b7a9-4900-951f-36eaf2406362" />
+<img alt="Untitled-2025-09-19-1412" src="https://github.com/user-attachments/assets/186b37fa-b7a9-4900-951f-36eaf2406362" />
 
 
 First we need to change the lock, right now it signals when the buffers are ready to be read again
@@ -263,7 +263,7 @@ We can now perform the three steps that we need to reduce across 8 GPUS, each st
 }
 ```
 
-<img width="4469" height="1766" alt="Oneshot_4" src="https://github.com/user-attachments/assets/8ef0b8c6-d904-4d91-81e3-5340079e1bc6" />
+<img alt="Oneshot_4" src="https://github.com/user-attachments/assets/8ef0b8c6-d904-4d91-81e3-5340079e1bc6" />
 
 
 With this we're getting even better performance than before
@@ -326,7 +326,7 @@ __global__ void all_reduce_oneshot_kernel(scalar_t* __restrict__ destination, sc
 }
 ```
 
-<img width="4469" height="1766" alt="Oneshot_5" src="https://github.com/user-attachments/assets/c52acd61-021f-4272-b485-1cc257b8e0f6" />
+<img alt="Oneshot_5" src="https://github.com/user-attachments/assets/c52acd61-021f-4272-b485-1cc257b8e0f6" />
 
 Okay wow, it's actually much better, turns out that the simplest thing outperformed all of my sophisticated parallel reductions. 
 
@@ -386,7 +386,7 @@ __global__ void all_reduce_oneshot_kernel(scalar_t* __restrict__ destination, sc
 
 Let's test it out:
 
-<img width="4469" height="1766" alt="Oneshot_6" src="https://github.com/user-attachments/assets/c1f27af4-1b42-4fb2-825b-8d8e51a874b3" />
+<img alt="Oneshot_6" src="https://github.com/user-attachments/assets/c1f27af4-1b42-4fb2-825b-8d8e51a874b3" />
 
 
 A small improvement but an improvement nevetheless
@@ -510,7 +510,7 @@ With this we can get better than NCCL performance for medium sized buffers as we
 
 For completeness let's visualize all of the algorithms that we've implemented so far. I started this post mentioning that all of the algorithms here are based on the custom allreduce from inside vLLM, it would be fair to compare against it as well
 
-<img width="4768" height="1766" alt="cumulative2" src="https://github.com/user-attachments/assets/04545b7f-5ba3-4c95-8e56-26023faff024" />
+<img alt="cumulative2" src="https://github.com/user-attachments/assets/04545b7f-5ba3-4c95-8e56-26023faff024" />
 
 The good news is that we're now outperforming NCCL on every buffer size that matters for LLM inference. 
 The bad news is we're getting slightly worse performance on very small buffers compared to the vLLM version. The reason is very simple and a limitation of our current approach that is using NVSHMEM. 
